@@ -1,60 +1,3 @@
-//package com.example.delmor;
-//import android.Manifest;
-//import android.app.Activity;
-//import android.content.pm.PackageManager;
-//import android.os.Build;
-//
-//import androidx.activity.result.ActivityResultLauncher;
-//import androidx.activity.result.contract.ActivityResultContracts;
-//import androidx.core.app.ActivityCompat;
-//import androidx.core.content.ContextCompat;
-//
-//public class PermissionManager {
-//
-//    private static final int LOCATION_PERMISSION_REQUEST_CODE = 123;
-//
-//    private Activity activity;
-//
-//    public PermissionManager(Activity activity) {
-//        this.activity = activity;
-//    }
-//
-//    public boolean checkPermission() {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//
-//            int permissionResult = ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION);
-//            return permissionResult == PackageManager.PERMISSION_GRANTED;
-//
-//        }
-//        return true;
-//    }
-//
-//    public void requestPermission() {
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            ActivityCompat.requestPermissions(activity,
-//                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-//                    LOCATION_PERMISSION_REQUEST_CODE);
-//
-//
-//
-//
-//        }
-//
-//    }
-//
-//    public boolean handlePermissionResult(int requestCode, int[] grantResults) {
-//        if (requestCode == LOCATION_PERMISSION_REQUEST_CODE) {
-//            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                // Permiso concedido
-//                return true;
-//            } else {
-//                // Permiso denegado
-//                return false;
-//            }
-//        }
-//        return false;
-//    }
-//}
 package com.example.delmor;
 
 import android.Manifest;
@@ -73,10 +16,15 @@ import androidx.fragment.app.FragmentActivity;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 public class PermissionManager {
 
+    private CountDownLatch storagePermissionLatch;
+
     public static final int PERMISSION_REQUEST_CODE = 123;
+
+    public static final int REQUEST_MANAGE_ALL_FILES_ACCESS = 1;
 
     private FragmentActivity activity;
     private ActivityResultLauncher<String[]> requestMultiplePermissionsLauncher;
@@ -90,7 +38,7 @@ public class PermissionManager {
         requestMultiplePermissionsLauncher = activity.registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),
                 permissions -> {
-                    // Aquí puedes manejar la respuesta de los permisos
+                    // Maneja la respuesta de los permisos
                     boolean allPermissionsGranted = true;
                     for (Map.Entry<String, Boolean> entry : permissions.entrySet()) {
                         if (!entry.getValue()) {
@@ -115,74 +63,41 @@ public class PermissionManager {
     }
 
     public boolean checkPermissions() {
-
-// SI usa android 11
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
-//        Permiso no esta concedido
-//        return  false;
-                return false;
-            }
-
-            String[] requiredPermissions = {
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.CAMERA,
-                    Manifest.permission.RECORD_AUDIO,
-                    // Agrega más permisos según sea necesario
-
-            };
-
-            for (String permission : requiredPermissions) {
-                if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
-                    return false; // Al menos un permiso no está concedido
-                }
-            }
-
-            return true; // Todos los permisos están concedidos
-
-
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            String[] requiredPermissions = {
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.CAMERA,
-                    Manifest.permission.RECORD_AUDIO,
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-
-                    // Agrega más permisos según sea necesario
-
-//                    // Agrega el permiso MANAGE_EXTERNAL_STORAGE para Android 11 y superior
-//                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ?
-//                            Manifest.permission.MANAGE_EXTERNAL_STORAGE : ""
-            };
-
-            for (String permission : requiredPermissions) {
-                if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
-                    return false; // Al menos un permiso no está concedido
-                }
-            }
-
-            return true; // Todos los permisos están concedidos
+        // Verificar si se otorgó el permiso MANAGE_EXTERNAL_STORAGE
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            openManageAllFilesAccessSettings();
+            return false; // No continuar la verificación de permisos
         }
-        return true; // No es necesario verificar permisos en versiones anteriores a Marshmallow
+
+        // Verificar otros permisos
+        String[] requiredPermissions = {
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.CAMERA,
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+                // Agrega más permisos según sea necesario
+        };
+
+        for (String permission : requiredPermissions) {
+            if (ContextCompat.checkSelfPermission(activity, permission) != PackageManager.PERMISSION_GRANTED) {
+                return false; // Al menos un permiso no está concedido
+            }
+        }
+
+        return true; // Todos los permisos están concedidos
     }
 
     public void requestPermissions() {
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-     openManageAllFilesAccessSettings();
-
+            openManageAllFilesAccessSettings();
             String[] permissions = {
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.CAMERA,
                     Manifest.permission.RECORD_AUDIO,
-
                     // Agrega más permisos según sea necesario
-
             };
-
             requestMultiplePermissionsLauncher.launch(permissions);
-
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             String[] permissions = {
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -191,27 +106,13 @@ public class PermissionManager {
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     // Agrega más permisos según sea necesario
-
-//                    // Agrega el permiso MANAGE_EXTERNAL_STORAGE para Android 11 y superior
-//                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ?
-//                            Manifest.permission.MANAGE_EXTERNAL_STORAGE : ""
             };
-
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                openManageAllFilesAccessSettings();
-
-            }
             requestMultiplePermissionsLauncher.launch(permissions);
-
         }
     }
 
     public boolean handlePermissionResult(int[] grantResults) {
-
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-
             Map<String, Boolean> permissionsMap = new HashMap<>();
             String[] requiredPermissions = {
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -226,12 +127,6 @@ public class PermissionManager {
 
             boolean allPermissionsGranted = !permissionsMap.containsValue(false);
 
-//        if (!allPermissionsGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-//            // Al menos un permiso fue denegado y estamos en Android 11 o superior
-//            openManageAllFilesAccessSettings();
-//        }
-
-            //se compruebe si todos los permisos son concecidos
             if (allPermissionsGranted) {
                 if (Environment.isExternalStorageManager()) {
                     return true;
@@ -241,7 +136,6 @@ public class PermissionManager {
             }
             return false;
         } else {
-
             Map<String, Boolean> permissionsMap = new HashMap<>();
             String[] requiredPermissions = {
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -250,8 +144,6 @@ public class PermissionManager {
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     // Agrega el permiso MANAGE_EXTERNAL_STORAGE para Android 11 y superior
-//                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ?
-//                        Manifest.permission.MANAGE_EXTERNAL_STORAGE : ""
             };
 
             for (int i = 0; i < requiredPermissions.length; i++) {
@@ -261,14 +153,42 @@ public class PermissionManager {
             boolean allPermissionsGranted = !permissionsMap.containsValue(false);
 
             return allPermissionsGranted;
-
         }
     }
 
     private void openManageAllFilesAccessSettings() {
-        Toast.makeText(activity, "Permite el acceso al alamacenamiento", Toast.LENGTH_SHORT).show();
+        Toast.makeText(activity, "Permite el acceso al almacenamiento", Toast.LENGTH_SHORT).show();
+
+        // Inicializa el CountDownLatch con 1
+        storagePermissionLatch = new CountDownLatch(1);
+
+        // Inicia la actividad para gestionar el permiso MANAGE_ALL_FILES_ACCESS
         Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-//        intent.setData(Uri.parse("package:" + activity.getPackageName()));
-        activity.startActivity(intent);
+        activity.startActivityForResult(intent, REQUEST_MANAGE_ALL_FILES_ACCESS);
+
+        try {
+            // Espera hasta que se complete la gestión de permisos
+            storagePermissionLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // Continúa con la solicitud de otros permisos después de la gestión de permisos
+//        requestOtherPermissions();
     }
+
+    public void handleManageAllFilesAccessResult() {
+        // Realiza acciones después de que la gestión de permisos de almacenamiento haya terminado
+
+        // Por ejemplo, puedes realizar la solicitud de otros permisos aquí
+//        requestOtherPermissions();
+
+        // Libera el CountDownLatch para permitir que la ejecución continúe
+        if (storagePermissionLatch != null) {
+            storagePermissionLatch.countDown();
+        }
+    }
+
+
+
 }
