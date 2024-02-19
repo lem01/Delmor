@@ -90,11 +90,16 @@ public class PermissionManager {
 
     public void requestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            openManageAllFilesAccessSettings();
+          if(!Environment.isExternalStorageManager()){
+              openManageAllFilesAccessSettings();
+          }
+
             String[] permissions = {
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.CAMERA,
                     Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
                     // Agrega más permisos según sea necesario
             };
             requestMultiplePermissionsLauncher.launch(permissions);
@@ -118,6 +123,8 @@ public class PermissionManager {
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.CAMERA,
                     Manifest.permission.RECORD_AUDIO,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE
                     // Agrega el permiso MANAGE_EXTERNAL_STORAGE para Android 11 y superior
             };
 
