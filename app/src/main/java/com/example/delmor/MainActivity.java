@@ -1,14 +1,16 @@
 package com.example.delmor;
 
+import android.location.Location;
 import android.os.Bundle;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements LocationManagerHelper.LocationUpdateListener {
 
     private PermissionManager permissionManager;
+    private LocationManagerHelper locationManagerHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -16,16 +18,17 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         permissionManager = new PermissionManager(this);
+        locationManagerHelper = new LocationManagerHelper(this, this);
 
         // Verifica y solicita permisos al iniciar la actividad
         checkAndRequestPermissions();
 
-        // Aquí puedes agregar el resto del código de tu actividad
+        // Inicia la actualización periódica de la ubicación
+        locationManagerHelper.startLocationUpdates();
     }
 
     // Método para verificar y solicitar permisos
     private void checkAndRequestPermissions() {
-
         if (!permissionManager.checkPermissions()) {
             permissionManager.requestPermissions();
         }
@@ -40,21 +43,26 @@ public class MainActivity extends AppCompatActivity {
             boolean permissionsGranted = permissionManager.handlePermissionResult(grantResults);
 
             if (permissionsGranted) {
-                // Acciones adicionales si todos los permisos fueron concedidos
-                Toast.makeText(this, "Los permisos fueron concedidos", Toast.LENGTH_SHORT).show();
+                // Inicia la actualización periódica de la ubicación después de conceder los permisos
+                locationManagerHelper.startLocationUpdates();
             } else {
-                // Acciones adicionales si al menos un permiso fue denegado
-                Toast.makeText(this, "Permisos no concedidos", Toast.LENGTH_SHORT).show();
+                // Puedes manejar la negación de permisos según sea necesario
             }
-        } else if (requestCode == PermissionManager.REQUEST_MANAGE_ALL_FILES_ACCESS) {
-            // La gestión de permisos se ha completado
-            permissionManager.handleManageAllFilesAccessResult();
         }
     }
 
+    // Implementa el método de LocationUpdateListener para recibir actualizaciones de ubicación
+    @Override
+    public void onLocationUpdate(Location location) {
+        // Muestra la latitud y longitud en un Toast
+        String message = "Latitud: " + location.getLatitude() + "\nLongitud: " + location.getLongitude();
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
 
-    // Método para obtener la ubicación una vez que se haya concedido el permiso
-    private void obtenerUbicacion() {
-        // Puedes agregar aquí el código para obtener la ubicación, similar a tu implementación anterior
+    // Detiene la actualización periódica de la ubicación cuando la actividad se detiene
+    @Override
+    protected void onStop() {
+        super.onStop();
+        locationManagerHelper.stopLocationUpdates();
     }
 }
